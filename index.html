@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>나만의 100자 다이어리</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --accent: #E8F5E9;
+            --bg: #f7f7f5;
+            --surface: #ffffff;
+            --text: #1a1a1a;
+            --muted: #aaa;
+            --border: #efefef;
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        [data-theme="green"] { --primary:#4CAF50; --accent:#E8F5E9; }
+        [data-theme="sky"]   { --primary:#03A9F4; --accent:#E1F5FE; }
+        [data-theme="pink"]  { --primary:#E91E63; --accent:#FCE4EC; }
+        [data-theme="gray"]  { --primary:#607D8B; --accent:#ECEFF1; }
+
+        * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; margin:0; padding:0; }
+
+        body {
+            display:flex; align-items:center; justify-content:center;
+            min-height:100vh; background:#ddddd8;
+            font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;
+            -webkit-user-select:none; user-select:none; overflow:hidden; color:var(--text);
+        }
+
+        #app {
+            width:min(100vw,412px); height:min(100vh,900px);
+            background:var(--bg); border-radius:28px; overflow:hidden;
+            display:flex; flex-direction:column;
+            box-shadow:0 24px 60px rgba(0,0,0,0.18);
+            position:relative; z-index:1;
+        }
+
+        @media (max-width:480px) {
+            #app { border-radius:0; height:100vh; width:100vw; box-shadow:none; }
+            body { background:var(--bg); }
+        }
+
+        /* HEADER */
+        header {
+            padding:calc(var(--safe-top) + 8px) 20px 12px;
+            display:flex; justify-content:space-between; align-items:center;
+            background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0;
+        }
+        .app-title { font-size:1.05rem; font-weight:800; color:var(--primary); letter-spacing:-0.3px; }
+        .icon-btn {
+            font-size:1.25rem; cursor:pointer; padding:6px; border-radius:10px;
+            transition:background 0.15s,transform 0.15s; line-height:1; border:none; background:none;
+        }
+        .icon-btn:active { transform:scale(0.88); background:var(--accent); }
+
+        /* CALENDAR */
+        #calendar-view {
+            flex:1; padding:16px 16px 20px; overflow-y:auto;
+            display:flex; flex-direction:column; gap:14px;
+        }
+        .cal-nav { display:flex; justify-content:space-between; align-items:center; }
+        .cal-nav-btn {
+            width:34px; height:34px; background:var(--accent); border:none; border-radius:10px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:0.8rem; color:var(--primary); cursor:pointer; font-weight:800;
+            transition:background 0.15s,transform 0.15s;
+        }
+        .cal-nav-btn:active { transform:scale(0.9); background:var(--primary); color:white; }
+        .cal-month { font-size:1.5rem; font-weight:900; letter-spacing:-0.5px; }
+        .cal-month .yr { font-size:0.9rem; color:var(--muted); font-weight:600; margin-left:4px; }
+
+        .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+        .wday { text-align:center; font-size:0.62rem; font-weight:700; color:var(--muted); padding-bottom:6px; }
+
+        .day {
+            aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+            background:var(--surface); border-radius:12px; font-size:0.85rem; font-weight:600;
+            cursor:pointer; position:relative; transition:all 0.18s; border:1.5px solid transparent;
+        }
+        .day:active { transform:scale(0.88); }
+        .day.today { background:var(--primary); color:white; box-shadow:0 4px 12px rgba(0,0,0,0.15); border-color:transparent; }
+        .day.has-content::after {
+            content:''; position:absolute; bottom:5px;
+            width:4px; height:4px; border-radius:50%; background:var(--primary);
+        }
+        .day.today.has-content::after { background:rgba(255,255,255,0.85); }
+        .day.empty { background:transparent; border:none; cursor:default; pointer-events:none; }
+
+        /* MEMO MODAL */
+        #memo-modal {
+            position:absolute; inset:0; background:var(--surface);
+            z-index:100; display:none; flex-direction:column;
+        }
+        .memo-enter { animation:slideUp 0.32s cubic-bezier(0.16,1,0.3,1) forwards; }
+        @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+        .modal-hdr {
+            padding:calc(var(--safe-top) + 8px) 20px 12px;
+            display:flex; justify-content:space-between; align-items:center;
+            border-bottom:1px solid var(--border); flex-shrink:0;
+        }
+        .modal-date { font-size:1rem; font-weight:800; color:var(--primary); }
+
+        .photo-area {
+            width:100%; height:190px; background:var(--bg); flex-shrink:1;
+            display:flex; align-items:center; justify-content:center;
+            overflow:hidden; position:relative; cursor:pointer;
+            border-bottom:1px solid var(--border);
+            transition:height 0.2s ease; min-height:70px;
+        }
+        .photo-area img { width:100%; height:100%; object-fit:cover; }
+        .photo-placeholder { display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--muted); }
+        .photo-placeholder .ico { font-size:2.2rem; }
+        .photo-placeholder span { font-size:0.8rem; font-weight:500; }
+        .photo-remove {
+            position:absolute; top:10px; right:10px;
+            background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
+            color:white; border:none; border-radius:50%;
+            width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+            font-size:0.75rem; cursor:pointer; z-index:2;
+        }
+
+        .memo-body { flex:1; padding:18px 20px; display:flex; flex-direction:column; overflow:hidden; }
+        #memo-input {
+            flex:1; width:100%; border:none; outline:none;
+            font-size:1rem; line-height:1.7; resize:none; background:transparent;
+            color:var(--text); font-family:inherit;
+            -webkit-user-select:text; user-select:text;
+        }
+        #memo-input::placeholder { color:var(--muted); }
+
+        .char-row { display:flex; align-items:center; gap:10px; margin-top:10px; flex-shrink:0; }
+        .char-bar { flex:1; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+        .char-fill { height:100%; background:var(--primary); transition:width 0.15s,background 0.15s; border-radius:2px; }
+        .char-fill.warn { background:#e53935; }
+        .char-num { font-size:0.72rem; color:var(--muted); font-weight:700; min-width:48px; text-align:right; }
+
+        .memo-foot {
+            padding:12px 20px; padding-bottom:calc(var(--safe-bottom) + 12px);
+            display:flex; gap:10px; background:var(--surface);
+            border-top:1px solid var(--border); flex-shrink:0;
+        }
+        .btn-save {
+            flex:1; padding:15px; background:var(--primary); color:white;
+            border:none; border-radius:14px; font-size:0.95rem; font-weight:700;
+            cursor:pointer; transition:all 0.15s; font-family:inherit;
+        }
+        .btn-save:active { transform:scale(0.97); opacity:0.9; }
+        .btn-del {
+            padding:15px 18px; background:var(--bg); color:var(--muted);
+            border:1.5px solid var(--border); border-radius:14px;
+            font-size:0.85rem; font-weight:600; cursor:pointer;
+            transition:all 0.15s; font-family:inherit; display:none;
+        }
+        .btn-del:active { border-color:#e53935; color:#e53935; }
+
+        /* SETTINGS */
+        #settings-modal {
+            position:absolute; inset:0; background:var(--surface);
+            z-index:200; display:none; flex-direction:column;
+            animation:slideRight 0.3s ease-out;
+        }
+        @keyframes slideRight { from{transform:translateX(100%)} to{transform:translateX(0)} }
+
+        .settings-hdr {
+            padding:calc(var(--safe-top) + 8px) 20px 12px;
+            display:flex; justify-content:space-between; align-items:center;
+            border-bottom:1px solid var(--border); flex-shrink:0;
+        }
+        .settings-hdr-title { font-size:1rem; font-weight:800; }
+        .settings-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:24px; }
+        .section-label { font-size:0.72rem; font-weight:700; color:var(--muted); letter-spacing:0.06em; text-transform:uppercase; margin-bottom:10px; }
+
+        .theme-row { display:flex; gap:12px; }
+        .theme-dot {
+            width:38px; height:38px; border-radius:50%; cursor:pointer;
+            border:3px solid transparent; transition:transform 0.2s,border-color 0.2s;
+        }
+        .theme-dot.active { border-color:var(--text); transform:scale(1.12); }
+
+        .backup-btn {
+            width:100%; padding:14px 16px;
+            background:var(--bg); border:1.5px solid var(--border);
+            border-radius:14px; margin-bottom:8px;
+            font-size:0.88rem; font-weight:600; text-align:left;
+            display:flex; justify-content:space-between; align-items:center;
+            cursor:pointer; transition:background 0.15s; font-family:inherit; color:var(--text);
+        }
+        .backup-btn:active { background:var(--accent); border-color:var(--primary); }
+
+        .toast {
+            position:absolute; bottom:90px; left:50%; transform:translateX(-50%);
+            background:rgba(0,0,0,0.78); color:white;
+            padding:10px 20px; border-radius:20px; font-size:0.82rem;
+            z-index:999; display:none; white-space:nowrap;
+        }
+
+        #file-input, #restore-text-input, #restore-photo-input { display:none; }
+    </style>
+</head>
+<body data-theme="green">
+<div id="app">
+
+    <header>
+        <div class="app-title">나만의 100자 다이어리 🌿</div>
+        <button class="icon-btn" onclick="openSettings()">⚙️</button>
+    </header>
+
+    <main id="calendar-view">
+        <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="changeMonth(-1)">◀</button>
+            <div class="cal-month">
+                <span id="mo-label">1</span>월<span class="yr" id="yr-label">2024</span>
+            </div>
+            <button class="cal-nav-btn" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+    </main>
+
+    <!-- MEMO -->
+    <div id="memo-modal">
+        <div class="modal-hdr">
+            <button class="icon-btn" onclick="closeMemo()">✕</button>
+            <div class="modal-date" id="memo-date-label">2024.01.01</div>
+            <div style="width:32px;"></div>
+        </div>
+        <div class="photo-area" id="photo-area">
+            <input type="file" id="file-input" accept="image/*">
+            <div id="photo-inner" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                <div class="photo-placeholder">
+                    <span class="ico">📸</span>
+                    <span>사진을 선택하세요</span>
+                </div>
+            </div>
+        </div>
+        <div class="memo-body">
+            <textarea id="memo-input" maxlength="100" placeholder="오늘의 100자 이야기를 들려주세요..."></textarea>
+            <div class="char-row">
+                <div class="char-bar"><div class="char-fill" id="char-fill" style="width:0%"></div></div>
+                <div class="char-num" id="char-num">0 / 100</div>
+            </div>
+        </div>
+        <div class="memo-foot">
+            <button class="btn-del" id="btn-del" onclick="deleteMemo()">삭제</button>
+            <button class="btn-save" onclick="saveMemo()">기록 저장하기</button>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings-modal">
+        <div class="settings-hdr">
+            <button class="icon-btn" onclick="closeSettings()">✕</button>
+            <div class="settings-hdr-title">설정</div>
+            <div style="width:32px;"></div>
+        </div>
+        <div class="settings-body">
+            <div>
+                <div class="section-label">테마 색상</div>
+                <div class="theme-row">
+                    <div class="theme-dot" id="td-green" style="background:#4CAF50" onclick="setTheme('green')"></div>
+                    <div class="theme-dot" id="td-sky"   style="background:#03A9F4" onclick="setTheme('sky')"></div>
+                    <div class="theme-dot" id="td-pink"  style="background:#E91E63" onclick="setTheme('pink')"></div>
+                    <div class="theme-dot" id="td-gray"  style="background:#607D8B" onclick="setTheme('gray')"></div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-label">글 백업</div>
+                <button class="backup-btn" onclick="exportTextMail()">
+                    <span>✉️ 메일로 보내기 (텍스트)</span><span>▶</span>
+                </button>
+                <button class="backup-btn" onclick="exportTextJSON()">
+                    <span>📤 파일로 내보내기 (글만)</span><span>▶</span>
+                </button>
+                <label class="backup-btn">
+                    <span>📥 글 백업 복원</span><span>▶</span>
+                    <input type="file" id="restore-text-input" accept=".json" onchange="restoreText(event)">
+                </label>
+            </div>
+
+            <div>
+                <div class="section-label">사진 백업</div>
+                <button class="backup-btn" onclick="exportPhotoJSON()">
+                    <span>📸 파일로 내보내기 (사진포함)</span><span>▶</span>
+                </button>
+                <label class="backup-btn">
+                    <span>📥 사진 백업 복원</span><span>▶</span>
+                    <input type="file" id="restore-photo-input" accept=".json" onchange="restorePhoto(event)">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const KEY = 'MY100DIARY';
+let diary = {};
+let viewDate = new Date();
+let selKey = '';
+let curImg = null;
+
+function init() {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { try { diary = JSON.parse(raw); } catch(e) {} }
+    applyTheme(localStorage.getItem(KEY+'_t') || 'green');
+    render();
+
+    document.getElementById('file-input').addEventListener('change', handleImg);
+    document.getElementById('memo-input').addEventListener('input', updateChars);
+    document.getElementById('photo-area').addEventListener('click', e => {
+        if (!e.target.classList.contains('photo-remove'))
+            document.getElementById('file-input').click();
+    });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onViewport);
+    }
+}
+
+function persist() { localStorage.setItem(KEY, JSON.stringify(diary)); }
+
+/* ── CALENDAR ── */
+function render() {
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    document.getElementById('yr-label').textContent = y;
+    document.getElementById('mo-label').textContent = m + 1;
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+    ['일','월','화','수','목','금','토'].forEach(w => {
+        const el = document.createElement('div'); el.className='wday'; el.textContent=w; grid.appendChild(el);
+    });
+    const firstDay = new Date(y,m,1).getDay();
+    const days = new Date(y,m+1,0).getDate();
+    const todayKey = fmt(new Date());
+    for (let i=0; i<firstDay; i++) {
+        const e=document.createElement('div'); e.className='day empty'; grid.appendChild(e);
+    }
+    for (let d=1; d<=days; d++) {
+        const key = `${y}-${pad(m+1)}-${pad(d)}`;
+        const el = document.createElement('div'); el.className='day';
+        el.textContent = d;
+        if (key===todayKey) el.classList.add('today');
+        if (diary[key]) el.classList.add('has-content');
+        el.onclick = () => openMemo(key);
+        grid.appendChild(el);
+    }
+}
+
+function fmt(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function pad(n) { return String(n).padStart(2,'0'); }
+function changeMonth(dir) { viewDate.setMonth(viewDate.getMonth()+dir); render(); }
+
+/* ── MEMO ── */
+function openMemo(key) {
+    selKey = key;
+    const entry = diary[key] || {text:'',img:null};
+    document.getElementById('memo-date-label').textContent = key.replace(/-/g,'.');
+    document.getElementById('memo-input').value = entry.text || '';
+    curImg = entry.img || null;
+    document.getElementById('btn-del').style.display = diary[key] ? '' : 'none';
+    updateChars(); renderPhoto();
+    const modal = document.getElementById('memo-modal');
+    modal.style.display = 'flex';
+    modal.classList.remove('memo-enter'); void modal.offsetWidth; modal.classList.add('memo-enter');
+    setTimeout(() => document.getElementById('memo-input').focus(), 380);
+}
+
+function closeMemo() {
+    document.getElementById('memo-modal').style.display = 'none';
+    document.activeElement && document.activeElement.blur();
+}
+
+function saveMemo() {
+    const text = document.getElementById('memo-input').value;
+    if (!text.trim() && !curImg) { delete diary[selKey]; }
+    else { diary[selKey] = {text, img:curImg}; }
+    persist(); render(); closeMemo(); showToast('저장되었습니다 ✅');
+}
+
+function deleteMemo() {
+    if (!confirm('이 기록을 삭제할까요?')) return;
+    delete diary[selKey]; persist(); render(); closeMemo();
+}
+
+/* ── PHOTO ── */
+function handleImg(e) {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w=img.width, h=img.height, MAX=700;
+            if (w>h?w>MAX:h>MAX) { if(w>h){h=h*MAX/w;w=MAX;}else{w=w*MAX/h;h=MAX;} }
+            canvas.width=w; canvas.height=h;
+            canvas.getContext('2d').drawImage(img,0,0,w,h);
+            curImg = canvas.toDataURL('image/jpeg',0.75);
+            renderPhoto();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file); e.target.value='';
+}
+
+function renderPhoto() {
+    const area = document.getElementById('photo-area');
+    const inner = document.getElementById('photo-inner');
+    const ex = area.querySelector('.photo-remove'); if(ex) ex.remove();
+    if (curImg) {
+        inner.innerHTML = `<img src="${curImg}" alt="사진">`;
+        const btn = document.createElement('button');
+        btn.className='photo-remove'; btn.textContent='✕';
+        btn.onclick = e => { e.stopPropagation(); curImg=null; renderPhoto(); };
+        area.appendChild(btn);
+    } else {
+        inner.innerHTML = `<div class="photo-placeholder"><span class="ico">📸</span><span>사진을 선택하세요</span></div>`;
+    }
+}
+
+/* ── CHARS ── */
+function updateChars() {
+    const len = document.getElementById('memo-input').value.length;
+    document.getElementById('char-num').textContent = len+' / 100';
+    const fill = document.getElementById('char-fill');
+    fill.style.width = len+'%';
+    fill.classList.toggle('warn', len >= 90);
+}
+
+/* ── KEYBOARD ── */
+function onViewport() {
+    const vv = window.visualViewport;
+    const modal = document.getElementById('memo-modal');
+    if (!modal || modal.style.display==='none') return;
+    const kb = window.innerHeight - vv.height - vv.offsetTop;
+    document.getElementById('photo-area').style.height = kb > 50 ? '70px' : '190px';
+}
+
+/* ── SETTINGS ── */
+function openSettings() { document.getElementById('settings-modal').style.display='flex'; }
+function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
+
+function setTheme(t) {
+    localStorage.setItem(KEY+'_t', t);
+    applyTheme(t);
+    closeSettings();
+}
+
+function applyTheme(t) {
+    document.body.setAttribute('data-theme', t);
+    document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+    const dot = document.getElementById('td-'+t);
+    if (dot) dot.classList.add('active');
+}
+
+/* ── TOAST ── */
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent=msg; t.style.display='block';
+    setTimeout(()=>t.style.display='none', 2200);
+}
+
+/* ── 글 백업 ── */
+function exportTextMail() {
+    let body = '나만의 100자 다이어리 백업\n\n';
+    Object.keys(diary).sort().forEach(k => {
+        if (diary[k] && diary[k].text) body += `[${k}]\n${diary[k].text}\n\n`;
+    });
+    window.location.href = `mailto:?subject=${encodeURIComponent('다이어리 백업')}&body=${encodeURIComponent(body)}`;
+}
+
+function exportTextJSON() {
+    const out = {};
+    Object.keys(diary).forEach(k => { out[k] = {text: diary[k].text || ''}; });
+    dlJSON(out, `diary_text_${today()}.json`);
+    showToast('글 백업 파일 저장됨 ✅');
+}
+
+function restoreText(e) {
+    const file = e.target.files[0]; if (!file) return;
+    rdJSON(file, imported => {
+        if (confirm(`${Object.keys(imported).length}개 글을 복원할까요? 기존 글과 합쳐져요.`)) {
+            Object.keys(imported).forEach(k => {
+                if (!diary[k]) diary[k] = {};
+                diary[k].text = imported[k].text || '';
+            });
+            persist(); render(); closeSettings(); showToast('글 복원 완료 ✅');
+        }
+    });
+    e.target.value='';
+}
+
+/* ── 사진 백업 ── */
+function exportPhotoJSON() {
+    const out = {}; let cnt = 0;
+    Object.keys(diary).forEach(k => {
+        if (diary[k] && diary[k].img) { out[k]={img:diary[k].img}; cnt++; }
+    });
+    if (!cnt) { showToast('저장된 사진이 없어요'); return; }
+    dlJSON(out, `diary_photo_${today()}.json`);
+    showToast(`사진 ${cnt}장 백업 완료 ✅`);
+}
+
+function restorePhoto(e) {
+    const file = e.target.files[0]; if (!file) return;
+    rdJSON(file, imported => {
+        const cnt = Object.keys(imported).length;
+        if (confirm(`사진 ${cnt}장을 복원할까요?`)) {
+            Object.keys(imported).forEach(k => {
+                if (!diary[k]) diary[k] = {};
+                diary[k].img = imported[k].img;
+            });
+            persist(); render(); closeSettings(); showToast('사진 복원 완료 ✅');
+        }
+    });
+    e.target.value='';
+}
+
+/* ── UTILS ── */
+function dlJSON(data, filename) {
+    const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function rdJSON(file, cb) {
+    const r = new FileReader();
+    r.onload = ev => { try { cb(JSON.parse(ev.target.result)); } catch(e) { alert('올바른 백업 파일이 아니에요.'); } };
+    r.readAsText(file);
+}
+
+function today() { return new Date().toISOString().slice(0,10); }
+
+window.onload = init;
+</script>
+</body>
+</html>

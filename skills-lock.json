@@ -331,6 +331,12 @@
       "skillPath": "plugins/codex/skills/gpt-5-4-prompting/SKILL.md",
       "computedHash": "8d8fcf95a90bbced0bc2f500b3b13aa200e8a4460e931c1ec798e69f59c24366"
     },
+    "gstack": {
+      "source": "garrytan/gstack",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "6eefa94fa8eff9a76275adb0c60712f99b94cb850e0a03902d18adda57264cea"
+    },
     "hyperframes": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",

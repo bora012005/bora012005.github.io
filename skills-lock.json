@@ -295,6 +295,12 @@
       "skillPath": "skills/verify-and-stop/SKILL.md",
       "computedHash": "3d67de16a2b3c48b643bc511ebc4cb86e6c7105215d8428b6140cbcb73aba4e6"
     },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
     "wireframe-portal-title": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",

@@ -151,6 +151,18 @@
       "skillPath": "registry/blocks/code-slice-hero/SKILL.md",
       "computedHash": "15fda47fad4aafd7f0f0a617e88f51a7ea67b9c5225e394347a4f64b4b96ab3e"
     },
+    "codex-cli-runtime": {
+      "source": "openai/codex-plugin-cc",
+      "sourceType": "github",
+      "skillPath": "plugins/codex/skills/codex-cli-runtime/SKILL.md",
+      "computedHash": "03b09f8ad5721f1d33d830cff54637656c58920befcb32835c6f003e625a7a54"
+    },
+    "codex-result-handling": {
+      "source": "openai/codex-plugin-cc",
+      "sourceType": "github",
+      "skillPath": "plugins/codex/skills/codex-result-handling/SKILL.md",
+      "computedHash": "1ca05b8eb3e45816b428dc71e24355a89a8f997502ade309e0c53a06adb1b1e7"
+    },
     "cold-email": {
       "source": "coreyhaines31/marketingskills",
       "sourceType": "github",
@@ -282,6 +294,12 @@
       "sourceType": "github",
       "skillPath": "registry/blocks/glass-shard-title/SKILL.md",
       "computedHash": "8ab5464a4df1fdb192b018f5d9b07a9f5fbadbf27bdced25d3c6433699723385"
+    },
+    "gpt-5-4-prompting": {
+      "source": "openai/codex-plugin-cc",
+      "sourceType": "github",
+      "skillPath": "plugins/codex/skills/gpt-5-4-prompting/SKILL.md",
+      "computedHash": "8d8fcf95a90bbced0bc2f500b3b13aa200e8a4460e931c1ec798e69f59c24366"
     },
     "hyperframes": {
       "source": "heygen-com/hyperframes",

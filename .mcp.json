@@ -6,6 +6,10 @@
       "headers": {
         "Authorization": "Bearer ${CONTEXT7_API_KEY}"
       }
+    },
+    "playgama-developer-console": {
+      "type": "http",
+      "url": "https://developer.playgama.com/api/mcp"
     }
   }
 }
